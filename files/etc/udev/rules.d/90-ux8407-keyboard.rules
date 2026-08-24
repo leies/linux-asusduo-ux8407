@@ -1,0 +1,3 @@
+# Detachable Duo keyboard HID: allow the session to set Fn-lock / backlight.
+KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1cd7", GROUP="input", MODE="0660", TAG+="uaccess"
+ACTION=="add", KERNEL=="hidraw*", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="1cd7", RUN+="/usr/local/bin/omarchy-ux8407-keyboard init"

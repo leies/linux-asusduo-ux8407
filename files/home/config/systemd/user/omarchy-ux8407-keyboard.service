@@ -1,0 +1,12 @@
+[Unit]
+Description=Initialize ASUS Zenbook Duo UX8407 keyboard Fn-lock and backlight
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'for i in $(seq 1 25); do /usr/local/bin/omarchy-ux8407-keyboard init && exit 0; sleep 0.4; done; exit 0'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=graphical-session.target

@@ -1,0 +1,12 @@
+#!/bin/bash
+build() {
+  # Early (uncompressed) cpio — kernel ACPI table upgrade runs before the
+  # compressed initramfs is unpacked.
+  add_file_early /boot/acpi/ssdt-noswd0.aml /kernel/firmware/acpi/ssdt-noswd0.aml
+}
+
+help() {
+  cat <<HELPEOF
+Load SSDT that disables the UX8407 ghost RT722 (SWD0).
+HELPEOF
+}

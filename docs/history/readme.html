@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phase 1 — ASUS Zenbook Duo UX8407AA on Omarchy</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --panel: #1a2332;
+    --panel2: #243044;
+    --text: #e7ecf3;
+    --muted: #9aa8bc;
+    --accent: #7dcfff;
+    --ok: #9ece6a;
+    --fail: #f7768e;
+    --warn: #e0af68;
+    --code-bg: #0b1016;
+    --border: #2e3d52;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font: 16px/1.55 "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  header {
+    padding: 2.5rem 1.5rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, #152033, var(--bg));
+  }
+  header .wrap, main, nav.toc { max-width: 880px; margin: 0 auto; }
+  h1 { margin: 0 0 .4rem; font-size: 1.85rem; letter-spacing: -0.02em; }
+  .meta { color: var(--muted); font-size: .95rem; }
+  nav.toc {
+    padding: 1.25rem 1.5rem;
+  }
+  nav.toc ol { padding-left: 1.2rem; }
+  nav.toc a { color: var(--accent); text-decoration: none; }
+  nav.toc a:hover { text-decoration: underline; }
+  main { padding: 0 1.5rem 4rem; }
+  h2 {
+    margin-top: 2.4rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    font-size: 1.35rem;
+  }
+  h3 { margin-top: 1.6rem; font-size: 1.08rem; color: var(--accent); }
+  p, li { color: var(--text); }
+  .muted { color: var(--muted); }
+  code, pre {
+    font-family: ui-monospace, "Cascadia Code", "SF Mono", Menlo, monospace;
+    font-size: .86rem;
+  }
+  code {
+    background: var(--code-bg);
+    padding: .12rem .35rem;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.1rem;
+    overflow-x: auto;
+    line-height: 1.45;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0 1.4rem;
+    font-size: .94rem;
+  }
+  th, td {
+    text-align: left;
+    padding: .5rem .6rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  th { color: var(--muted); font-weight: 600; }
+  .tag {
+    display: inline-block;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    padding: .12rem .45rem;
+    border-radius: 999px;
+    vertical-align: middle;
+  }
+  .ok { background: #1f3a24; color: var(--ok); }
+  .fail { background: #3a1c24; color: var(--fail); }
+  .try { background: #3a3018; color: var(--warn); }
+  .step {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.15rem 1.05rem;
+    margin: 1.1rem 0;
+  }
+  .step h3 { margin-top: 0; }
+  .path { color: var(--accent); }
+  footer {
+    color: var(--muted);
+    font-size: .9rem;
+    padding-top: 2rem;
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Phase 1 — UX8407AA on Omarchy</h1>
+    <p class="meta">
+      ASUS Zenbook Duo UX8407AA &nbsp;·&nbsp; Omarchy 4.0.0-1 &nbsp;·&nbsp; Linux 7.1.8-arch1-3<br>
+      Checkpoint marked 2026-08-23 after boot, brightness, keyboard, and audio were working.
+    </p>
+  </div>
+</header>
+
+<nav class="toc">
+  <ol>
+    <li><a href="#hardware">Hardware we were dealing with</a></li>
+    <li><a href="#problems">The three original problems</a></li>
+    <li><a href="#steps">Changes, step by step</a></li>
+    <li><a href="#final">What Phase 1 actually is</a></li>
+    <li><a href="#files">Files in this zip</a></li>
+    <li><a href="#restore">How to re-apply after an update</a></li>
+  </ol>
+</nav>
+
+<main>
+<h2 id="hardware">1. Hardware we were dealing with</h2>
+<p>
+This laptop is not a generic Intel notebook. It is a 2026 dual-OLED convertible with a detachable USB keyboard.
+Almost every bug came from that combination plus Intel’s new <code>xe</code> GPU driver and SoundWire audio.
+</p>
+<table>
+  <tr><th>Piece</th><th>What it is</th></tr>
+  <tr><td>DMI</td><td><code>Zenbook Duo UX8407AA</code>, BIOS UX8407AA.308</td></tr>
+  <tr><td>CPU / GPU</td><td>Intel Core Ultra X7 358H, Arc B390, driver <code>xe</code></td></tr>
+  <tr><td>Panels</td><td>Two BOE 2880×1800@144Hz OLEDs: <code>eDP-1</code> (top), <code>eDP-2</code> (bottom, PHY B / pipe B)</td></tr>
+  <tr><td>Keyboard</td><td>Primax USB <code>0b05:1cd7</code>, bound to <code>hid-generic</code> (not <code>hid-asus</code>)</td></tr>
+  <tr><td>Audio</td><td>SOF Panther Lake + CS42L43 (headset) + 2× CS35L56 (speakers) + a <em>ghost</em> RT722 in ACPI</td></tr>
+</table>
+
+<h2 id="problems">2. The three original problems</h2>
+<ol>
+  <li><strong>Boot freeze.</strong> Wallpaper and cursor appeared, then the session hung ~70s. Kernel: PSR / Panel Replay, then <code>eDP-2</code> link-training failure on PHY B, stacked <code>flip_done timed out</code>.</li>
+  <li><strong>No brightness.</strong> <code>intel_backlight</code> sysfs writes succeeded; the OLEDs ignored PWM. Classic Panther Lake DPCD-AUX mismatch. Omarchy already had this fix for UX5406AA / B9406, not UX8407.</li>
+  <li><strong>Fn keys wrong, then no speakers.</strong> F-row arrived as F1–F12. Later, PipeWire only had Dummy Output because <code>sof_sdw</code> died creating two <code>SDW3-Playback-SimpleJack</code> DAIs.</li>
+</ol>
+
+<h2 id="steps">3. Changes, step by step</h2>
+<p class="muted">
+Failed attempts are included on purpose. They are the interesting part: each one taught why the next approach was required.
+</p>
+
+<div class="step">
+  <h3>Step 1 — Diagnose the freeze and brightness <span class="tag ok">KEPT</span></h3>
+  <p>
+    Journal showed Intel <code>xe</code> PSR idle timeouts and pipe-B <code>flip_done</code> waits of 10s each.
+    Backlight nodes: <code>intel_backlight</code> (eDP-1), <code>card0-eDP-2-backlight</code>, and a broken <code>asus_screenpad</code> (max 255, current 130816).
+    Omarchy brightness UI correctly prefers <code>intel_backlight</code>, but the panel wanted DPCD, not PWM.
+  </p>
+  <pre>xe.enable_dpcd_backlight=1
+xe.enable_psr=0
+xe.enable_psr2_sel_fetch=0
+xe.enable_panel_replay=0</pre>
+  <p>Written to <span class="path">configs/etc/limine-entry-tool.d/asus-ux8407-display.conf</span>, then <code>limine-update</code>.</p>
+</div>
+
+<div class="step">
+  <h3>Step 2 — Dual-panel brightness sync <span class="tag ok">KEPT (harmless)</span></h3>
+  <p>
+    Omarchy only writes the top backlight. A user service watched <code>intel_backlight</code> and copied the percentage to eDP-2.
+    After Phase 1 decided the bottom panel stays off forever, this service is unused at runtime but the idea still matters if you ever re-enable eDP-2.
+  </p>
+</div>
+
+<div class="step">
+  <h3>Step 3 — Keyboard F-row and HID Fn-lock <span class="tag ok">KEPT</span></h3>
+  <p>
+    USB ID <code>0b05:1cd7</code> is <em>not</em> in <code>hid-asus</code>, so Linux used <code>hid-generic</code>.
+    Vendor page 0xFF31 (report 0x5A) was ignored. We did three layers:
+  </p>
+  <ol>
+    <li>Hyprland binds in <span class="path">configs/hypr/bindings.lua</span> (works even if firmware stays in F-key mode).</li>
+    <li>udev hwdb remap of USB HID F1–F6 scancodes <code>7003a</code>…<code>7003f</code> to mute/volume/kbdillum/brightness.</li>
+    <li>Userspace HID feature reports on hidraw (report 0x5A): ASUS handshake <code>"ASUS Tech.Inc."</code>, Fn-lock ON <code>5a d0 4e 01</code>, backlight <code>5a ba c5 c4 &lt;0–3&gt;</code>.</li>
+  </ol>
+  <p>
+    hidraw is root-only by default. udev rule grants <code>GROUP=input MODE=0660</code>.
+    A copy of the helper lives in <code>/usr/local/bin</code> because udev at boot cannot see an encrypted home.
+  </p>
+  <p>F9 was voxtype push-to-talk; it was unbound. Dictation remains Super+Ctrl+X.</p>
+</div>
+
+<div class="step">
+  <h3>Step 4 — PSR gone, freeze still there <span class="tag fail">FAILED as complete fix</span></h3>
+  <p>
+    After reboot, cmdline had the PSR flags. PSR idle errors disappeared.
+    The hang moved to <strong>PHY B / eDP-2 link training</strong>:
+  </p>
+  <pre>Failed to bring PHY B to idle
+Timeout waiting for DDI BUF B to get active
+[CONNECTOR:eDP-2] Failed to enable link training
+[CRTC:pipe B] flip_done timed out
+DSB 0 timed out waiting for idle</pre>
+  <p>
+    Hyprland’s first commit applied <code>preferred</code> 144Hz + <code>transform = 2</code> (180°) to <em>both</em> OLEDs.
+    That modeset is what wedged pipe B. There was also a Raydium touchscreen oops in the same window; it was not the main freeze.
+  </p>
+</div>
+
+<div class="step">
+  <h3>Step 5 — Keep the bottom OLED off <span class="tag ok">KEPT</span></h3>
+  <p>Two layers, both required:</p>
+  <ol>
+    <li>Hyprland: explicit <code>eDP-1</code> at 2880×1800@144, scale 1.6, transform 2; <code>eDP-2</code> <code>disabled = true</code>.</li>
+    <li>Kernel: <code>video=eDP-2:d</code> so KMS never trains PHY B at boot.</li>
+  </ol>
+  <p>Also added <code>xe.enable_dsb=0</code> for the remaining DSB timeouts.</p>
+  <p>
+    A dock-watcher that would turn eDP-2 on when the keyboard was undocked was written, then <strong>disabled</strong> after you said the bottom screen must never come on.
+    F7 (toggle bottom) was removed from the key map.
+  </p>
+</div>
+
+<div class="step">
+  <h3>Step 6 — Audio: Dummy Output <span class="tag try">SEVERAL FAILURES, THEN SUCCESS</span></h3>
+  <p>
+    SOF firmware booted (v2.14.1.1). Codecs enumerated. Then:
+  </p>
+  <pre>sysfs: cannot create duplicate filename
+  '.../sof_sdw/SDW3-Playback-SimpleJack'
+sof_sdw: probe failed with error -12</pre>
+  <p>
+    ACPI lists a Realtek RT722 on SoundWire link 3 next to the real CS42L43.
+    Function topologies create a SimpleJack DAI for <em>each</em>. That is a known “ghost RT722” pattern on ASUS Panther Lake (UX5406AA). Upstream fix is a DMI <code>_ADR</code> remap in <code>drivers/soundwire/dmi-quirks.c</code>. Stock 7.1.8 does not match UX8407AA.
+  </p>
+  <p>Attempts, in order:</p>
+  <table>
+    <tr><th>Attempt</th><th>Result</th></tr>
+    <tr>
+      <td>Blacklist <code>snd_soc_rt722_sdca</code> + force topology <code>sof-ptl-cs42l43-agg-l3-cs35l56-l2.tplg</code></td>
+      <td><span class="tag fail">FAIL</span> sof_sdw never bound — it waits for every ACPI SDW device to have a driver.</td>
+    </tr>
+    <tr>
+      <td>Load RT722 again, keep forced topology</td>
+      <td><span class="tag fail">FAIL</span> Duplicate SimpleJack still created in <code>mc_probe</code>. The duplicate is from DAI-link construction, not from function-topology vs static tplg.</td>
+    </tr>
+    <tr>
+      <td>SSDT <code>_STA=0</code> on <code>SWD0</code> via mkinitcpio <code>add_file</code></td>
+      <td><span class="tag fail">FAIL</span> File landed in the <em>compressed</em> initramfs. ACPI table upgrade runs before that unpacks. SWD0 still present; no <code>UX8407 / NOSWD0</code> table in dmesg.</td>
+    </tr>
+    <tr>
+      <td>Embed SSDT in UKI <code>.acpi</code> via ukify config <code>ACPI=</code></td>
+      <td><span class="tag fail">FAIL</span> systemd 261 ukify has no <code>--acpi-table</code>. Key ignored.</td>
+    </tr>
+    <tr>
+      <td>Wrap <code>ukify</code> in <code>/usr/local/bin</code></td>
+      <td><span class="tag fail">FAIL</span> <code>sudo</code> <code>secure_path</code> skips <code>/usr/local/bin</code>, so mkinitcpio never saw the wrapper.</td>
+    </tr>
+    <tr>
+      <td><code>objcopy --add-section .acpi=</code> onto the UKI</td>
+      <td><span class="tag fail">DANGEROUS</span> Section appeared at index 0 with bogus VMA <code>0x200000000</code> and shifted <code>.text</code>. Would likely brick boot. Reverted with a clean <code>limine-update</code>.</td>
+    </tr>
+    <tr>
+      <td>mkinitcpio <code>add_file_early</code> → uncompressed early cpio <code>/kernel/firmware/acpi/*.aml</code></td>
+      <td><span class="tag ok">SUCCESS</span> This is what <code>CONFIG_ACPI_TABLE_UPGRADE</code> actually reads. After reboot, <code>sof-soundwire</code> registered; speakers worked.</td>
+    </tr>
+  </table>
+  <p>The SSDT (also in <span class="path">acpi/ssdt-noswd0.asl</span>):</p>
+  <pre>DefinitionBlock ("", "SSDT", 2, "UX8407", "NOSWD0", 0x00000001)
+{
+    External (_SB_.PC00.HDAS.IDA_.SNDW.SWD0, DeviceObj)
+    Scope (_SB.PC00.HDAS.IDA.SNDW.SWD0)
+    {
+        Method (_STA, 0, NotSerialized)
+        {
+            Return (Zero)
+        }
+    }
+}</pre>
+  <p>
+    <code>SWD0</code> is the ghost: ACPI <code>_ADR = 0x000330025d072201</code> (link 3, vendor 0x025d product 0x0722).
+    Real devices: <code>SWD2</code>/<code>SWD3</code> = CS35L56 on link 2, <code>SWD6</code> = CS42L43 on link 3.
+    Speaker tuning blobs for PCI SSID <code>1043:1444</code> were already in <code>linux-firmware-cirrus</code>.
+  </p>
+</div>
+
+<div class="step">
+  <h3>Step 7 — Mic mute on F10 <span class="tag ok">KEPT</span></h3>
+  <p>
+    Default Omarchy bind is <code>XF86AudioMicMute</code> → <code>omarchy-audio-input-mute</code>.
+    Phase 1 user map originally used F11. You asked for F10. F11 was cleared; F10 now toggles mute.
+  </p>
+</div>
+
+<h2 id="final">4. What Phase 1 actually is</h2>
+<table>
+  <tr><th>Surface</th><th>Phase 1 state</th></tr>
+  <tr><td>Login</td><td>Top OLED only, 144Hz, scale 1.6, 180° transform. No long compositor stall.</td></tr>
+  <tr><td>Bottom OLED</td><td>Off in kernel and Hyprland. Never enable without a new kernel that can train PHY B.</td></tr>
+  <tr><td>Brightness</td><td>DPCD AUX via <code>xe.enable_dpcd_backlight=1</code>.</td></tr>
+  <tr><td>Speakers / jack</td><td>ALSA card <code>sofsoundwire</code>. Default sink Speaker.</td></tr>
+  <tr><td>Mic</td><td>Default source Microphones. F10 mutes.</td></tr>
+  <tr><td>Keyboard</td><td>Fn-lock + backlight over HID report 0x5A. F1–F6/F8–F10/F12 as in the table below.</td></tr>
+</table>
+
+<h3>F-row in Phase 1</h3>
+<table>
+  <tr><th>Key</th><th>Action</th></tr>
+  <tr><td>F1</td><td>Speaker mute</td></tr>
+  <tr><td>F2</td><td>Volume down</td></tr>
+  <tr><td>F3</td><td>Volume up</td></tr>
+  <tr><td>F4</td><td>Keyboard backlight cycle (0–3)</td></tr>
+  <tr><td>F5</td><td>Display brightness down</td></tr>
+  <tr><td>F6</td><td>Display brightness up</td></tr>
+  <tr><td>F8</td><td>Screenshot</td></tr>
+  <tr><td>F9</td><td>Toggle touchpad</td></tr>
+  <tr><td>F10</td><td>Microphone mute</td></tr>
+  <tr><td>F12</td><td>Display / hardware menu</td></tr>
+</table>
+<p>Hold <strong>Fn</strong> for the real F1–F12 once HID init has run. Super+Ctrl+X still toggles dictation.</p>
+
+<h2 id="files">5. Files in this zip</h2>
+<table>
+  <tr><th>Path in zip</th><th>Live location</th></tr>
+  <tr><td><span class="path">readme.html</span></td><td>this document</td></tr>
+  <tr><td><span class="path">PHASE</span> / <span class="path">PHASE1-STATUS.md</span></td><td><code>~/.local/share/omarchy/</code></td></tr>
+  <tr><td><span class="path">configs/hypr/monitors.lua</span></td><td><code>~/.config/hypr/monitors.lua</code></td></tr>
+  <tr><td><span class="path">configs/hypr/bindings.lua</span></td><td><code>~/.config/hypr/bindings.lua</code></td></tr>
+  <tr><td><span class="path">configs/hypr/ux8407-bottom-screen.lua</span></td><td><code>~/.local/state/omarchy/toggles/hypr/</code></td></tr>
+  <tr><td><span class="path">configs/etc/limine-entry-tool.d/asus-ux8407-display.conf</span></td><td><code>/etc/limine-entry-tool.d/</code></td></tr>
+  <tr><td><span class="path">configs/etc/modprobe.d/xe-asus-ux8407.conf</span></td><td><code>/etc/modprobe.d/</code></td></tr>
+  <tr><td><span class="path">configs/etc/udev/hwdb.d/90-ux8407-keyboard.hwdb</span></td><td><code>/etc/udev/hwdb.d/</code></td></tr>
+  <tr><td><span class="path">configs/etc/udev/rules.d/90-ux8407-keyboard.rules</span></td><td><code>/etc/udev/rules.d/</code></td></tr>
+  <tr><td><span class="path">configs/etc/initcpio/install/acpi_override</span></td><td><code>/etc/initcpio/install/</code></td></tr>
+  <tr><td><span class="path">configs/etc/mkinitcpio.conf.d/zz-ux8407-acpi.conf</span></td><td><code>/etc/mkinitcpio.conf.d/</code></td></tr>
+  <tr><td><span class="path">acpi/ssdt-noswd0.asl</span> + <span class="path">.aml</span></td><td>source + compiled; live copy <code>/boot/acpi/ssdt-noswd0.aml</code></td></tr>
+  <tr><td><span class="path">scripts/omarchy-ux8407-keyboard</span></td><td><code>~/.local/bin/</code> and <code>/usr/local/bin/</code></td></tr>
+  <tr><td><span class="path">scripts/apply-ux8407-*.sh</span></td><td>Historical apply scripts, including ones that did not stick. Read them in date order.</td></tr>
+  <tr><td><span class="path">systemd/*.service</span></td><td>Keyboard HID init (enabled). Dock-watch exists but is <em>not</em> part of Phase 1 runtime.</td></tr>
+</table>
+
+<h2 id="restore">6. How to re-apply after an Omarchy / kernel update</h2>
+<ol>
+  <li>Copy the <code>configs/etc/*</code> tree back under <code>/etc</code> (needs root).</li>
+  <li>Copy <code>acpi/ssdt-noswd0.aml</code> to <code>/boot/acpi/</code>.</li>
+  <li>Confirm <code>HOOKS+=(acpi_override)</code> still runs <em>after</em> Omarchy’s mkinitcpio drop-in (filename <code>zz-ux8407-acpi.conf</code> is intentional).</li>
+  <li>Run <code>systemd-hwdb update && udevadm trigger</code> and <code>limine-update</code>.</li>
+  <li>Restore Hyprland files under <code>~/.config/hypr/</code>.</li>
+  <li>Copy the keyboard helper to both <code>~/.local/bin</code> and <code>/usr/local/bin</code>.</li>
+  <li>Reboot. Check:
+    <pre>cat /proc/asound/cards          # expect sofsoundwire
+cat /proc/cmdline               # expect video=eDP-2:d and xe.enable_*
+hyprctl monitors                # expect eDP-1 only
+journalctl -b -k | grep NOSWD0  # ACPI overlay loaded</pre>
+  </li>
+</ol>
+<p>
+Do not re-enable eDP-2, do not put the SSDT only in the compressed initramfs, and do not objcopy a <code>.acpi</code> section onto the UKI with a bogus VMA — those three are the landmines from this phase.
+</p>
+
+<footer>
+  Phase 1 checkpoint for studying the UX8407 Omarchy bring-up. Later phases should get their own zip rather than overwriting this one.
+</footer>
+</main>
+</body>
+</html>

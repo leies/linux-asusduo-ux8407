@@ -1,0 +1,9 @@
+# ASUS Zenbook Duo UX8407AA Primax keyboard (USB 0b05:1cd7)
+# Map F1–F6 scancodes to the printed hotkeys when firmware is in F-key mode.
+evdev:input:b0003v0B05p1CD7*
+ KEYBOARD_KEY_7003a=mute
+ KEYBOARD_KEY_7003b=volumedown
+ KEYBOARD_KEY_7003c=volumeup
+ KEYBOARD_KEY_7003d=kbdillumtoggle
+ KEYBOARD_KEY_7003e=brightnessdown
+ KEYBOARD_KEY_7003f=brightnessup

@@ -1,0 +1,6 @@
+*~
+*.bak
+*.swp
+.DS_Store
+.env
+backup/

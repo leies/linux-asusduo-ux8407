@@ -1,0 +1,195 @@
+#!/bin/bash
+# UX8407AA detachable keyboard: Fn-lock (hotkey row), HID backlight,
+# bottom-screen toggle, and screen swap.
+set -euo pipefail
+
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy"
+KBD_STATE="$STATE_DIR/ux8407-kbd-backlight"
+BOTTOM_TOGGLE="$STATE_DIR/toggles/hypr/ux8407-bottom-screen-disable.lua"
+VENDOR=0b05
+PRODUCT=1cd7
+MAX_KBD=3
+
+BOTTOM_LUA="$STATE_DIR/toggles/hypr/ux8407-bottom-screen.lua"
+SCALE=1.6
+# 1800 / 1.6 = 1125: stack the bottom OLED under the top one.
+BOTTOM_POS="0x1125"
+
+keyboard_usb_present() {
+  local d
+  for d in /sys/bus/usb/devices/*; do
+    [[ -r $d/idVendor && -r $d/idProduct ]] || continue
+    [[ $(<"$d/idVendor") == "$VENDOR" && $(<"$d/idProduct") == "$PRODUCT" ]] && return 0
+  done
+  return 1
+}
+
+write_bottom_disabled() {
+  mkdir -p "$(dirname "$BOTTOM_LUA")"
+  cat >"$BOTTOM_LUA" <<'EOF'
+hl.monitor({ output = "eDP-2", disabled = true })
+EOF
+}
+
+write_bottom_enabled() {
+  # Bottom screen stays off permanently.
+  write_bottom_disabled
+}
+
+bottom_is_disabled() {
+  [[ -f $BOTTOM_LUA ]] && grep -q 'disabled = true' "$BOTTOM_LUA"
+}
+
+usage() {
+  echo "Usage: ${0##*/} {init|fn-lock|kbd-backlight|bottom-screen|screen-swap|sync-dock|watch-dock} [args]" >&2
+  exit 1
+}
+
+hidraw_for_report_5a() {
+  local node desc
+  for node in /sys/class/hidraw/hidraw*; do
+    [[ -e $node/device/uevent ]] || continue
+    grep -q "HID_ID=0003:0000${VENDOR^^}:0000${PRODUCT^^}" "$node/device/uevent" 2>/dev/null || continue
+    desc="$node/device/report_descriptor"
+    [[ -r $desc ]] || continue
+    python3 - "$desc" <<'PY' && { echo "/dev/$(basename "$node")"; return 0; }
+import sys
+sys.exit(0 if b"\x85\x5a" in open(sys.argv[1], "rb").read() else 1)
+PY
+  done
+  return 1
+}
+
+hid_feature() {
+  local dev="$1"
+  python3 - "$dev" "${@:2}" <<'PY'
+import fcntl, os, sys
+
+dev = sys.argv[1]
+payload = bytes(int(x, 0) & 0xFF for x in sys.argv[2:])
+if not payload or payload[0] != 0x5A:
+    sys.exit("payload must start with report id 0x5a")
+
+def ioc(length: int) -> int:
+    # HIDIOCSFEATURE(len) = _IOC(_IOC_READ|_IOC_WRITE, 'H', 0x06, len)
+    return 0xC0000000 | (length << 16) | (ord("H") << 8) | 0x06
+
+fd = os.open(dev, os.O_RDWR)
+try:
+    last_err = None
+    for length in (16, 64):
+        buf = bytearray(length)
+        buf[: len(payload)] = payload
+        try:
+            fcntl.ioctl(fd, ioc(length), buf, True)
+            sys.exit(0)
+        except OSError as err:
+            last_err = err
+    print(f"HID feature report failed: {last_err}", file=sys.stderr)
+    sys.exit(1)
+finally:
+    os.close(fd)
+PY
+}
+
+handshake_and_fn_lock() {
+  local dev="$1"
+  # "ASUS Tech.Inc." handshake used by hid-asus
+  hid_feature "$dev" 0x5a 0x41 0x53 0x55 0x53 0x20 0x54 0x65 0x63 0x68 0x2e 0x49 0x6e 0x63 0x2e 0x00
+  # Fn-lock ON: F-row sends the printed hotkeys; hold Fn for F1–F12
+  hid_feature "$dev" 0x5a 0xd0 0x4e 0x01
+}
+
+set_kbd_level() {
+  local dev="$1" level="$2"
+  ((level < 0)) && level=0
+  ((level > MAX_KBD)) && level=$MAX_KBD
+  hid_feature "$dev" 0x5a 0xba 0xc5 0xc4 "$level"
+  mkdir -p "$STATE_DIR"
+  echo "$level" >"$KBD_STATE"
+  if command -v omarchy-osd >/dev/null 2>&1; then
+    local pct=0
+    ((MAX_KBD > 0)) && pct=$((level * 100 / MAX_KBD))
+    omarchy-osd -i keyboard -p "$pct" || true
+  fi
+}
+
+cmd_init() {
+  local dev
+  dev="$(hidraw_for_report_5a)" || return 0
+  handshake_and_fn_lock "$dev"
+  local level=1
+  [[ -r $KBD_STATE ]] && level="$(<"$KBD_STATE")"
+  set_kbd_level "$dev" "$level" || true
+}
+
+cmd_fn_lock() {
+  local dev
+  dev="$(hidraw_for_report_5a)" || return 1
+  handshake_and_fn_lock "$dev"
+}
+
+cmd_kbd() {
+  local action="${1:-cycle}"
+  local dev level=0
+  dev="$(hidraw_for_report_5a)" || {
+    echo "No UX8407 keyboard backlight interface" >&2
+    exit 1
+  }
+  [[ -r $KBD_STATE ]] && level="$(<"$KBD_STATE")"
+  case "$action" in
+  get) echo "$level"; return 0 ;;
+  off) level=0 ;;
+  restore)
+    [[ -r $KBD_STATE ]] && level="$(<"$KBD_STATE")" || level=1
+    ;;
+  up) level=$((level + 1)) ;;
+  down) level=$((level - 1)) ;;
+  cycle)
+    level=$((level + 1))
+    ((level > MAX_KBD)) && level=0
+    ;;
+  [0-3]) level="$action" ;;
+  *)
+    echo "Usage: ${0##*/} kbd-backlight {up|down|cycle|off|restore|0-3}" >&2
+    exit 1
+    ;;
+  esac
+  set_kbd_level "$dev" "$level"
+}
+
+cmd_bottom_screen() {
+  write_bottom_disabled
+  hyprctl reload >/dev/null 2>&1 || true
+}
+
+cmd_sync_dock() {
+  write_bottom_disabled
+}
+
+cmd_watch_dock() {
+  # First Hyprland commit must keep eDP-2 off. After that, follow the dock.
+  sleep 2
+  cmd_sync_dock
+  udevadm monitor --udev --subsystem-match=usb --property 2>/dev/null |
+    while IFS= read -r line; do
+      [[ $line == ACTION=* ]] || continue
+      sleep 0.4
+      cmd_sync_dock
+    done
+}
+
+cmd_screen_swap() {
+  hyprctl dispatch swapactiveworkspaces eDP-1 eDP-2 >/dev/null
+}
+
+case "${1:-}" in
+init) cmd_init ;;
+fn-lock) cmd_fn_lock ;;
+kbd-backlight) shift; cmd_kbd "${1:-cycle}" ;;
+bottom-screen) cmd_bottom_screen ;;
+screen-swap) cmd_screen_swap ;;
+sync-dock) cmd_sync_dock ;;
+watch-dock) cmd_watch_dock ;;
+*) usage ;;
+esac

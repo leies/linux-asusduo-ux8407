@@ -1,0 +1,3 @@
+# UX8407 has two full eDP panels, not a ScreenPad. asus-nb-wmi still exports
+# a broken asus_screenpad backlight (overflowed brightness, systemd restore fails).
+ACTION=="add", SUBSYSTEM=="backlight", KERNEL=="asus_screenpad", ENV{SYSTEMD_WANTS}=""
