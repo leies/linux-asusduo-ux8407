@@ -1,10 +1,12 @@
 # linux-asusduo-ux8407
 
-Phase 1 daily-driver tweaks for the **ASUS Zenbook Duo UX8407AA** (2026, Intel Panther Lake) on [Omarchy](https://omarchy.org/) (Arch + Hyprland + Limine UKI).
+Hi all, this is Leies, I make this repo for Omarchy from **ASUS Zenbook Duo UX8407AA** (2026, Intel Panther Lake) on [Omarchy](https://omarchy.org/) (Arch + Hyprland + Limine UKI).
 
-This is the known-good setup after the first hardware-fix round: top OLED only, brightness, Fn row, speakers, and mic mute.
+Since i can't found any workground for Linux, so this is the known-good setup after the first hardware-fix round: top OLED only, brightness, Fn row, speakers, and mic mute.
 
 **Do not turn the bottom OLED (`eDP-2`) on.** Link training on Intel PHY B freezes the compositor at login.
+
+I didn't use the bottom OLED as this laptop I use for Win11 for better experience. 
 
 ## Hardware this targets
 
