@@ -7,14 +7,12 @@ FILES="$REPO/files"
 ORIG_ARGS=("$@")
 
 SKIP_UKI=0
-WINDOWS_ONLY=0
 NO_FASTFETCH=0
 
 usage() {
   cat <<'EOF'
 Usage: ./install.sh [options]
 
-  --windows-only   Only add/refresh the Windows 11 Limine entry
   --skip-uki       Install files but do not run limine-update
   --no-fastfetch   Do not append fastfetch to ~/.bashrc
   -h, --help       Show this help
@@ -23,7 +21,6 @@ EOF
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-  --windows-only) WINDOWS_ONLY=1 ;;
   --skip-uki) SKIP_UKI=1 ;;
   --no-fastfetch) NO_FASTFETCH=1 ;;
   -h | --help)
@@ -93,24 +90,6 @@ as_user() {
     DBUS_SESSION_BUS_ADDRESS="unix:path=$runtime/bus" \
     "$@"
 }
-
-install_windows_boot() {
-  install_file "$FILES/etc/boot/hooks/post.d/80-windows-11-entry" \
-    /etc/boot/hooks/post.d/80-windows-11-entry 755
-  ESP_PATH="${ESP_PATH:-/boot}" bash /etc/boot/hooks/post.d/80-windows-11-entry
-  if [[ -r ${ESP_PATH:-/boot}/limine.conf ]] && grep -q 'bootmgfw.efi' "${ESP_PATH:-/boot}/limine.conf"; then
-    echo "Windows 11 is in Limine. Keep Limine first in the firmware boot order."
-  else
-    echo "Windows 11 entry was not added. Is a Windows ESP present?" >&2
-  fi
-}
-
-if ((WINDOWS_ONLY)); then
-  install_windows_boot
-  echo "Done (Windows boot only). Reboot and pick Windows 11 in Limine."
-  echo "Backups: $BACKUP"
-  exit 0
-fi
 
 echo "Installing UX8407 Phase 1 as user $TARGET_USER ($TARGET_HOME)"
 
@@ -197,18 +176,13 @@ if command -v hyprctl >/dev/null 2>&1; then
   as_user hyprctl reload >/dev/null 2>&1 || true
 fi
 
-install_windows_boot
-
 if ((SKIP_UKI == 0)); then
   echo "Rebuilding UKI / Limine entries (acpi_override + display cmdline)..."
   limine-update
-  # limine-update rewrites limine.conf; re-apply Windows after that.
-  ESP_PATH="${ESP_PATH:-/boot}" bash /etc/boot/hooks/post.d/80-windows-11-entry
 fi
 
 echo
 echo "Phase 1 installed."
 echo "  Bottom OLED (eDP-2) stays off — do not re-enable it."
-echo "  Firmware boot order should list Limine first; Windows 11 is in that menu."
 echo "  Reboot once so the early ACPI SSDT and Xe options take effect."
 echo "  Backups: $BACKUP"

@@ -2,7 +2,7 @@
 
 Phase 1 daily-driver tweaks for the **ASUS Zenbook Duo UX8407AA** (2026, Intel Panther Lake) on [Omarchy](https://omarchy.org/) (Arch + Hyprland + Limine UKI).
 
-This is the known-good setup after the first hardware-fix round: top OLED only, brightness, Fn row, speakers, mic mute, and dual-boot into the existing Windows 11 install.
+This is the known-good setup after the first hardware-fix round: top OLED only, brightness, Fn row, speakers, and mic mute.
 
 **Do not turn the bottom OLED (`eDP-2`) on.** Link training on Intel PHY B freezes the compositor at login.
 
@@ -33,34 +33,10 @@ Then reboot.
 
 | Option | Effect |
 |--------|--------|
-| `--windows-only` | Only add/refresh the Windows 11 Limine entry |
 | `--skip-uki` | Copy files but do not rebuild the UKI |
 | `--no-fastfetch` | Leave `~/.bashrc` alone |
 
 Existing files are copied to `~/.local/share/linux-asusduo-ux8407/backup-<timestamp>/` before overwrite.
-
-### Windows 11 in the Limine menu
-
-Omarchy’s ESP is **not** the Windows ESP, so Limine will not auto-detect `bootmgfw.efi`. The installer:
-
-1. Installs `/etc/boot/hooks/post.d/80-windows-11-entry` so `limine-update` keeps the entry
-2. Chainloads Windows from its own ESP by GPT PARTUUID:
-
-```
-/Windows 11
-    protocol: efi
-    path: uuid(<Windows ESP PARTUUID>):/EFI/Microsoft/Boot/bootmgfw.efi
-```
-
-On this laptop that ESP is `nvme0n1p1` (`SYSTEM`). Keep **Limine first** in the firmware boot order; pick Windows from the Limine menu.
-
-If BitLocker is on, Windows may ask for the recovery key once after the boot path changes.
-
-Add or refresh the entry later without touching the rest:
-
-```bash
-sudo ./install.sh --windows-only
-```
 
 ## What Phase 1 changes
 
@@ -101,8 +77,7 @@ Ghost Realtek RT722 (`_SB.PC00.HDAS.IDA.SNDW.SWD0`) is hidden with SSDT `ssdt-no
 
 1. `limine-update` must still pick up `/etc/limine-entry-tool.d/asus-ux8407-display.conf`
 2. Rebuild the UKI so `acpi_override` still ships the SSDT (`sudo limine-update`)
-3. The Windows hook should re-add the Limine entry if the config was rewritten
-4. Do not re-enable `eDP-2` unless a later kernel actually trains PHY B
+3. Do not re-enable `eDP-2` unless a later kernel actually trains PHY B
 
 ## Layout
 
@@ -122,6 +97,7 @@ docs/history/scripts/               earlier apply attempts (do not run)
 ## Intentionally not included
 
 - Re-enabling the bottom screen
+- Windows 11 Limine boot menu entry
 - TLP
 - Extra NVIDIA / IPU7 packages
 - Dock-watch (it would turn `eDP-2` on when the keyboard undocks)

@@ -76,10 +76,6 @@ System (root):
 - `/boot/acpi/ssdt-noswd0.aml`
 - `/usr/local/bin/omarchy-ux8407-keyboard` (udev at boot cannot see encrypted home)
 
-## Dual boot
-
-Windows 11 is on `nvme0n1p3` (label `Win11`). Its ESP is `nvme0n1p1` (`SYSTEM`). Limine chainloads `\EFI\Microsoft\Boot\bootmgfw.efi` from that ESP. Keep Limine first in firmware boot order.
-
 ## After kernel / Omarchy updates
 
 1. `limine-update` must still pick up the display drop-in.
