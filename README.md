@@ -40,7 +40,7 @@ Then reboot.
 
 Existing files are copied to `~/.local/share/linux-asusduo-ux8407/backup-<timestamp>/` before overwrite.
 
-## What I changes
+## What I changed ?
 
 ### Display / boot freeze
 
