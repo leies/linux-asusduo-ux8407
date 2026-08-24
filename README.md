@@ -2,7 +2,7 @@
 
 Hi all, this is Leies, I make this repo for Omarchy from **ASUS Zenbook Duo UX8407AA** (2026, Intel Panther Lake) on [Omarchy](https://omarchy.org/) (Arch + Hyprland + Limine UKI).
 
-Since i can't found any workground for Linux, so this is the known-good setup after the first hardware-fix round: top OLED only, brightness, Fn row, speakers, and mic mute.
+Since i can't found any workground for Linux, so this is the known-good setup after the first hardware-fix round: TOP OLED only, Keyboard MUST attached (didnt try for Bluetooth, but i think should works) Brightness, Fn row, speakers, and mic mute.
 
 **Do not turn the bottom OLED (`eDP-2`) on.** Link training on Intel PHY B freezes the compositor at login.
 
@@ -40,7 +40,7 @@ Then reboot.
 
 Existing files are copied to `~/.local/share/linux-asusduo-ux8407/backup-<timestamp>/` before overwrite.
 
-## What Phase 1 changes
+## What I changes
 
 ### Display / boot freeze
 
