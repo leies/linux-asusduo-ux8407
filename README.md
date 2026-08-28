@@ -71,7 +71,9 @@ Ghost Realtek RT722 (`_SB.PC00.HDAS.IDA.SNDW.SWD0`) is hidden with SSDT `ssdt-no
 
 ### Sleep / lid
 
-Lid close is supposed to **s2idle**. Stock s2idle and S3 both hung at `PM: suspend entry` because the Xe display C-states (DC5/DC6) were still on. The installer now sets `xe.enable_dc=0`, keeps display power wells on, stops `intel_lpmd` around suspend, and leaves lid-close → suspend enabled. Reboot after install before testing the lid.
+Lid close uses **s2idle** (confirmed on this machine: `PM: suspend entry (s2idle)` / `PM: suspend exit`, Wi‑Fi asleep, user slice frozen — not just DPMS).
+
+Stock s2idle and S3 hung at `PM: suspend entry` while Xe display C-states (DC5/DC6) were still on. The installer sets `xe.enable_dc=0`, keeps display power wells on, stops `intel_lpmd` around suspend, and leaves lid-close → suspend enabled. Reboot after install so those Xe flags are on the cmdline.
 
 Do **not** DPMS-off the OLED (that stayed black). The lid helper only locks and dims, then logind sleeps.
 
