@@ -16,12 +16,12 @@ Do not treat later experiments as Phase 1 unless this file is updated.
 | Speakers | `sof-soundwire` card present; default sink is Speaker |
 | Microphone | Default source is HD Audio Microphones; mute works |
 | Keyboard F-row | Custom Hyprland map (see below) |
-| Keyboard backlight | HID cycle on F4 |
+| Keyboard backlight | HID cycle on F4; off during s2idle, restored on wake |
 | Lid sleep | s2idle; lid open / power button resume |
 
 ## Sleep / lid
 
-Lid sleep works as **s2idle** (`PM: suspend entry (s2idle)` then `PM: suspend exit`). `xe.enable_dc=0` + power wells held + lpmd stopped around suspend. Stock s2idle and S3 hung; do not DPMS-off the OLED.
+Lid sleep works as **s2idle** (`PM: suspend entry (s2idle)` then `PM: suspend exit`). `xe.enable_dc=0` + power wells held + lpmd stopped around suspend. Keyboard HID backlight is turned off in `/usr/lib/systemd/system-sleep/` and restored on wake. Stock s2idle and S3 hung; do not DPMS-off the OLED.
 
 ## Intentionally off
 
