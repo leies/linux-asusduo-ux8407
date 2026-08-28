@@ -71,7 +71,7 @@ Ghost Realtek RT722 (`_SB.PC00.HDAS.IDA.SNDW.SWD0`) is hidden with SSDT `ssdt-no
 
 ### Sleep / lid
 
-s2idle (Modern Standby) hangs on this board: lid close and the power button cannot wake it. Suspend is forced to S3 (`MemorySleepMode=deep` / `mem_sleep_default=deep`).
+s2idle **and** S3 both hang (`PM: suspend entry` never returns; lid/power cannot wake). The installer **disables system suspend**. Lid close locks and dims the OLED (it does **not** DPMS-off — that left a black screen that would not light again). Lid open restores brightness. Use Shutdown from the power menu if you need the machine fully off.
 
 ### Other
 

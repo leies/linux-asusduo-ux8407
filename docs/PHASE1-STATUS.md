@@ -20,7 +20,7 @@ Do not treat later experiments as Phase 1 unless this file is updated.
 
 ## Sleep / lid
 
-s2idle hangs after `PM: suspend entry (s2idle)`; lid open and power button do not wake. Use S3 (`MemorySleepMode=deep`).
+s2idle and S3 both hang after `PM: suspend entry`; lid/power cannot wake. System suspend is disabled. Lid close locks and dims `intel_backlight` (no DPMS-off).
 
 ## Intentionally off
 

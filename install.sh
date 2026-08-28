@@ -117,8 +117,11 @@ install_file "$FILES/etc/limine-entry-tool.d/asus-ux8407-display.conf" \
   /etc/limine-entry-tool.d/asus-ux8407-display.conf
 install_file "$FILES/etc/limine-entry-tool.d/asus-ux8407-sleep.conf" \
   /etc/limine-entry-tool.d/asus-ux8407-sleep.conf
-install_file "$FILES/etc/systemd/sleep.conf.d/10-ux8407-deep-sleep.conf" \
-  /etc/systemd/sleep.conf.d/10-ux8407-deep-sleep.conf
+install_file "$FILES/etc/systemd/sleep.conf.d/10-ux8407-no-suspend.conf" \
+  /etc/systemd/sleep.conf.d/10-ux8407-no-suspend.conf
+rm -f /etc/systemd/sleep.conf.d/10-ux8407-deep-sleep.conf
+install_file "$FILES/etc/systemd/logind.conf.d/30-ux8407-lid.conf" \
+  /etc/systemd/logind.conf.d/30-ux8407-lid.conf
 install_file "$FILES/etc/udev/rules.d/91-ux8407-wakeup.rules" \
   /etc/udev/rules.d/91-ux8407-wakeup.rules
 install_file "$FILES/etc/modprobe.d/xe-asus-ux8407.conf" \
@@ -141,10 +144,16 @@ install_file "$FILES/etc/mkinitcpio.conf.d/zz-ux8407-acpi.conf" \
 # Keyboard helper: /usr/local/bin is visible before the encrypted home is unlocked
 install_file "$FILES/usr/local/bin/omarchy-ux8407-keyboard" \
   /usr/local/bin/omarchy-ux8407-keyboard 755
+install_file "$FILES/usr/local/bin/omarchy-ux8407-lid" \
+  /usr/local/bin/omarchy-ux8407-lid 755
 install -d "$TARGET_HOME/.local/bin"
 install -m 755 "$FILES/usr/local/bin/omarchy-ux8407-keyboard" \
   "$TARGET_HOME/.local/bin/omarchy-ux8407-keyboard"
-chown "$TARGET_UID:$TARGET_GID" "$TARGET_HOME/.local/bin/omarchy-ux8407-keyboard"
+install -m 755 "$FILES/usr/local/bin/omarchy-ux8407-lid" \
+  "$TARGET_HOME/.local/bin/omarchy-ux8407-lid"
+chown "$TARGET_UID:$TARGET_GID" \
+  "$TARGET_HOME/.local/bin/omarchy-ux8407-keyboard" \
+  "$TARGET_HOME/.local/bin/omarchy-ux8407-lid"
 
 # Hyprland + user service
 install -d "$TARGET_HOME/.config/hypr" "$TARGET_HOME/.config/systemd/user" \
@@ -174,13 +183,12 @@ systemd-hwdb update
 udevadm control --reload
 udevadm trigger --subsystem-match=hidraw --subsystem-match=input --subsystem-match=backlight --subsystem-match=acpi || true
 systemctl daemon-reload
-if [[ -w /sys/power/mem_sleep ]]; then
-  echo deep >/sys/power/mem_sleep || true
-fi
+systemctl restart systemd-logind.service
 
 as_user systemctl --user daemon-reload
 as_user systemctl --user enable --now omarchy-ux8407-keyboard.service
 as_user systemctl --user disable --now omarchy-ux8407-dock-watch.service 2>/dev/null || true
+as_user touch "$TARGET_HOME/.local/state/omarchy/toggles/suspend-off"
 
 if command -v hyprctl >/dev/null 2>&1; then
   as_user hyprctl reload >/dev/null 2>&1 || true

@@ -21,3 +21,10 @@ o.bind("F8", "Screenshot", "omarchy-capture-screenshot", { locked = true })
 o.bind("F9", "Toggle touchpad", "omarchy-toggle-touchpad", { locked = true })
 o.bind("F10", "Mute microphone", "omarchy-audio-input-mute", { locked = true })
 o.bind("F12", "Display", "omarchy-menu toggle hardware", { locked = true })
+
+-- Lid close must not suspend: s2idle and S3 both hang on this board.
+-- Default was omarchy-system-lid-close / omarchy-hyprland-monitor-clamshell.
+hl.unbind("switch:on:Lid Switch")
+hl.unbind("switch:off:Lid Switch")
+o.bind("switch:on:Lid Switch", nil, os.getenv("HOME") .. "/.local/bin/omarchy-ux8407-lid close", { locked = true })
+o.bind("switch:off:Lid Switch", nil, os.getenv("HOME") .. "/.local/bin/omarchy-ux8407-lid open", { locked = true })

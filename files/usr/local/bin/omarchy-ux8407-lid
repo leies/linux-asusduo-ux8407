@@ -1,0 +1,45 @@
+#!/bin/bash
+# UX8407AA: s2idle and S3 hang, and Xe OLED DPMS-off often never lights again.
+# Lid close: lock and dim. Lid open: restore brightness and force the panel on.
+set -euo pipefail
+
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy"
+BRIGHT_STATE="$STATE_DIR/ux8407-lid-brightness"
+BACKLIGHT=intel_backlight
+
+usage() {
+  echo "Usage: ${0##*/} {close|open}" >&2
+  exit 1
+}
+
+restore_panel() {
+  hyprctl dispatch 'hl.dsp.dpms({ action = "enable" })' >/dev/null 2>&1 || true
+  hyprctl eval 'hl.monitor({ output = "eDP-1", mode = "2880x1800@144", position = "0x0", scale = 1.6, transform = 2 })' >/dev/null 2>&1 || true
+  hyprctl eval 'hl.monitor({ output = "eDP-2", disabled = true })' >/dev/null 2>&1 || true
+}
+
+cmd_close() {
+  mkdir -p "$STATE_DIR"
+  brightnessctl -d "$BACKLIGHT" -m 2>/dev/null | awk -F, '{print $3}' >"$BRIGHT_STATE" || true
+  if omarchy-hw-laptop-closed && ! omarchy-hw-external-monitors; then
+    omarchy-system-lock >/dev/null 2>&1 || true
+  fi
+  # Dim only. Do not DPMS-off: this panel often stays black, and Hyprland can
+  # still report dpmsStatus=true so the stock wake path skips re-enable.
+  brightnessctl -d "$BACKLIGHT" set 1% >/dev/null 2>&1 || true
+}
+
+cmd_open() {
+  restore_panel
+  if [[ -s $BRIGHT_STATE ]]; then
+    brightnessctl -d "$BACKLIGHT" set "$(<"$BRIGHT_STATE")" >/dev/null 2>&1 || true
+  else
+    brightnessctl -d "$BACKLIGHT" set 50% >/dev/null 2>&1 || true
+  fi
+}
+
+case "${1:-}" in
+close) cmd_close ;;
+open) cmd_open ;;
+*) usage ;;
+esac
