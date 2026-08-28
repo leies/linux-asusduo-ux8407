@@ -115,6 +115,12 @@ chown -R "$TARGET_UID:$TARGET_GID" "$TARGET_HOME/.local/share/omarchy"
 # Kernel / firmware / udev / initramfs
 install_file "$FILES/etc/limine-entry-tool.d/asus-ux8407-display.conf" \
   /etc/limine-entry-tool.d/asus-ux8407-display.conf
+install_file "$FILES/etc/limine-entry-tool.d/asus-ux8407-sleep.conf" \
+  /etc/limine-entry-tool.d/asus-ux8407-sleep.conf
+install_file "$FILES/etc/systemd/sleep.conf.d/10-ux8407-deep-sleep.conf" \
+  /etc/systemd/sleep.conf.d/10-ux8407-deep-sleep.conf
+install_file "$FILES/etc/udev/rules.d/91-ux8407-wakeup.rules" \
+  /etc/udev/rules.d/91-ux8407-wakeup.rules
 install_file "$FILES/etc/modprobe.d/xe-asus-ux8407.conf" \
   /etc/modprobe.d/xe-asus-ux8407.conf
 install_file "$FILES/etc/modprobe.d/iwlwifi-disable-eht.conf" \
@@ -166,7 +172,11 @@ fi
 
 systemd-hwdb update
 udevadm control --reload
-udevadm trigger --subsystem-match=hidraw --subsystem-match=input --subsystem-match=backlight || true
+udevadm trigger --subsystem-match=hidraw --subsystem-match=input --subsystem-match=backlight --subsystem-match=acpi || true
+systemctl daemon-reload
+if [[ -w /sys/power/mem_sleep ]]; then
+  echo deep >/sys/power/mem_sleep || true
+fi
 
 as_user systemctl --user daemon-reload
 as_user systemctl --user enable --now omarchy-ux8407-keyboard.service

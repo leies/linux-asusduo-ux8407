@@ -1,0 +1,6 @@
+# Lid and power button must be allowed to wake from S3.
+SUBSYSTEM=="acpi", KERNEL=="PNP0C0C:*", ATTR{power/wakeup}="enabled"
+SUBSYSTEM=="acpi", KERNEL=="PNP0C0D:*", ATTR{power/wakeup}="enabled"
+SUBSYSTEM=="acpi", KERNEL=="PNP0C0E:*", ATTR{power/wakeup}="enabled"
+ACTION=="add", SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="Lid Switch", ATTR{../power/wakeup}="enabled"
+ACTION=="add", SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="Power Button", ATTR{../power/wakeup}="enabled"

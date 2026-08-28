@@ -18,6 +18,10 @@ Do not treat later experiments as Phase 1 unless this file is updated.
 | Keyboard F-row | Custom Hyprland map (see below) |
 | Keyboard backlight | HID cycle on F4 |
 
+## Sleep / lid
+
+s2idle hangs after `PM: suspend entry (s2idle)`; lid open and power button do not wake. Use S3 (`MemorySleepMode=deep`).
+
 ## Intentionally off
 
 - **Bottom OLED (`eDP-2`) never turns on.** Kernel `video=eDP-2:d` plus Hyprland `disabled = true`. Enabling it wedges Intel PHY B and freezes the compositor.

@@ -69,6 +69,10 @@ Hold Fn for real F1–F12 after keyboard init. Super+Ctrl+X still toggles dictat
 
 Ghost Realtek RT722 (`_SB.PC00.HDAS.IDA.SNDW.SWD0`) is hidden with SSDT `ssdt-noswd0.aml` in the **early** (uncompressed) initramfs via mkinitcpio hook `acpi_override`. The real card is `sofsoundwire`.
 
+### Sleep / lid
+
+s2idle (Modern Standby) hangs on this board: lid close and the power button cannot wake it. Suspend is forced to S3 (`MemorySleepMode=deep` / `mem_sleep_default=deep`).
+
 ### Other
 
 - `iwlwifi disable_11be=Y` — Wi-Fi 7 RX workaround on this Panther Lake generation
