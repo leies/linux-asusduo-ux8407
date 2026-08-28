@@ -123,8 +123,9 @@ rm -f /etc/systemd/sleep.conf.d/10-ux8407-deep-sleep.conf \
   /etc/systemd/sleep.conf.d/10-ux8407-no-suspend.conf
 install_file "$FILES/etc/systemd/logind.conf.d/30-ux8407-lid.conf" \
   /etc/systemd/logind.conf.d/30-ux8407-lid.conf
-install_file "$FILES/etc/systemd/system-sleep/ux8407-pre-suspend" \
-  /etc/systemd/system-sleep/ux8407-pre-suspend 755
+install_file "$FILES/usr/lib/systemd/system-sleep/ux8407-pre-suspend" \
+  /usr/lib/systemd/system-sleep/ux8407-pre-suspend 755
+rm -f /etc/systemd/system-sleep/ux8407-pre-suspend
 install_file "$FILES/etc/udev/rules.d/91-ux8407-wakeup.rules" \
   /etc/udev/rules.d/91-ux8407-wakeup.rules
 install_file "$FILES/etc/modprobe.d/xe-asus-ux8407.conf" \

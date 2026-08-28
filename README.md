@@ -75,7 +75,7 @@ Lid close uses **s2idle** (confirmed on this machine: `PM: suspend entry (s2idle
 
 Stock s2idle and S3 hung at `PM: suspend entry` while Xe display C-states (DC5/DC6) were still on. The installer sets `xe.enable_dc=0`, keeps display power wells on, stops `intel_lpmd` around suspend, and leaves lid-close → suspend enabled. Reboot after install so those Xe flags are on the cmdline.
 
-Do **not** DPMS-off the OLED (that stayed black). The lid helper only locks and dims, then logind sleeps. The HID keyboard backlight is turned off for sleep and restored on wake.
+Do **not** DPMS-off the OLED (that stayed black). The lid helper only locks and dims, then logind sleeps. The HID keyboard backlight is turned off for sleep (via `/usr/lib/systemd/system-sleep/`, which is what systemd actually runs) and restored on wake.
 
 ### Other
 
