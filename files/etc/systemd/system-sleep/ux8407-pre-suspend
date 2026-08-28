@@ -2,20 +2,43 @@
 # Stop intel_lpmd and keep GPU/audio/TB in D0 so xe/SOF are not in a
 # runtime-PM mid-flight when s2idle begins. Turn the HID keyboard
 # backlight off for sleep and restore the saved level on wake.
-ux8407_kbd() {
-  local action="$1" user home
-  user=$(loginctl list-sessions --no-legend 2>/dev/null | awk '/seat0/ { print $3; exit }')
-  [[ -n $user && $user != root ]] || user=$(id -un 1000 2>/dev/null || true)
-  [[ -n $user ]] || return 0
-  home=$(getent passwd "$user" | cut -d: -f6)
-  [[ -x /usr/local/bin/omarchy-ux8407-keyboard && -n $home ]] || return 0
-  HOME="$home" XDG_STATE_HOME="$home/.local/state" \
-    /usr/local/bin/omarchy-ux8407-keyboard kbd-backlight "$action" >/dev/null 2>&1 || true
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+
+FLAG=/run/ux8407-kbd-sleep
+KBD=/usr/local/bin/omarchy-ux8407-keyboard
+
+state_home() {
+  local home
+  home=$(getent passwd 1000 | cut -d: -f6)
+  printf '%s\n' "${home}/.local/state"
+}
+
+hold_kbd_usb() {
+  local d
+  for d in /sys/bus/usb/devices/*; do
+    [[ -r $d/idVendor && -r $d/idProduct ]] || continue
+    [[ $(<"$d/idVendor") == 0b05 && $(<"$d/idProduct") == 1cd7 ]] || continue
+    echo on >"$d/power/control" 2>/dev/null || true
+    echo -1 >"$d/power/autosuspend_delay_ms" 2>/dev/null || true
+    logger -t ux8407-sleep "hold USB keyboard $(basename "$d") powered"
+  done
+}
+
+kbd() {
+  local action="$1"
+  [[ -x $KBD ]] || return 0
+  HOME="$(getent passwd 1000 | cut -d: -f6)" \
+    XDG_STATE_HOME="$(state_home)" \
+    "$KBD" kbd-backlight "$action"
+  logger -t ux8407-sleep "kbd $action rc=$?"
 }
 
 case "$1" in
 pre)
-  ux8407_kbd sleep-off
+  mkdir -p /run
+  : >"$FLAG"
+  hold_kbd_usb
+  kbd sleep-off || true
   systemctl stop intel_lpmd.service >/dev/null 2>&1 || true
   for dev in 0000:00:02.0 0000:00:1f.3 0000:00:0d.0 0000:00:0d.2 0000:00:0d.3 0000:00:14.0; do
     ctrl="/sys/bus/pci/devices/${dev}/power/control"
@@ -23,14 +46,11 @@ pre)
   done
   ;;
 post)
+  rm -f "$FLAG"
   systemctl start intel_lpmd.service >/dev/null 2>&1 || true
-  # USB keyboard may need the HID handshake again after s2idle.
-  user=$(loginctl list-sessions --no-legend 2>/dev/null | awk '/seat0/ { print $3; exit }')
-  [[ -n $user && $user != root ]] || user=$(id -un 1000 2>/dev/null || true)
-  if [[ -n $user ]]; then
-    home=$(getent passwd "$user" | cut -d: -f6)
-    HOME="$home" XDG_STATE_HOME="$home/.local/state" \
-      /usr/local/bin/omarchy-ux8407-keyboard init >/dev/null 2>&1 || true
-  fi
+  HOME="$(getent passwd 1000 | cut -d: -f6)" \
+    XDG_STATE_HOME="$(state_home)" \
+    "$KBD" init >/dev/null 2>&1 || true
+  logger -t ux8407-sleep "post init rc=$?"
   ;;
 esac

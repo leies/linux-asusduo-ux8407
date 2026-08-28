@@ -52,7 +52,7 @@ hidraw_for_report_5a() {
     grep -q "HID_ID=0003:0000${VENDOR^^}:0000${PRODUCT^^}" "$node/device/uevent" 2>/dev/null || continue
     desc="$node/device/report_descriptor"
     [[ -r $desc ]] || continue
-    python3 - "$desc" <<'PY' && { echo "/dev/$(basename "$node")"; return 0; }
+    /usr/bin/python3 - "$desc" <<'PY' && { echo "/dev/$(basename "$node")"; return 0; }
 import sys
 sys.exit(0 if b"\x85\x5a" in open(sys.argv[1], "rb").read() else 1)
 PY
@@ -62,7 +62,7 @@ PY
 
 hid_feature() {
   local dev="$1"
-  python3 - "$dev" "${@:2}" <<'PY'
+  /usr/bin/python3 - "$dev" "${@:2}" <<'PY'
 import fcntl, os, sys
 
 dev = sys.argv[1]
@@ -129,6 +129,11 @@ cmd_init() {
   local dev
   dev="$(hidraw_for_report_5a)" || return 0
   handshake_and_fn_lock "$dev"
+  # During s2idle, USB re-enumerate must not turn the keys back on.
+  if [[ -e /run/ux8407-kbd-sleep ]]; then
+    set_kbd_level "$dev" 0 --no-save --no-osd || true
+    return 0
+  fi
   local level=1
   [[ -r $KBD_STATE ]] && level="$(<"$KBD_STATE")"
   set_kbd_level "$dev" "$level" || true
