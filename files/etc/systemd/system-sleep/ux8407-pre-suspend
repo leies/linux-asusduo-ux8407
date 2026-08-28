@@ -1,0 +1,15 @@
+#!/bin/bash
+# Stop intel_lpmd and keep GPU/audio/TB in D0 so xe/SOF are not in a
+# runtime-PM mid-flight when s2idle begins.
+case "$1" in
+pre)
+  systemctl stop intel_lpmd.service >/dev/null 2>&1 || true
+  for dev in 0000:00:02.0 0000:00:1f.3 0000:00:0d.0 0000:00:0d.2 0000:00:0d.3 0000:00:14.0; do
+    ctrl="/sys/bus/pci/devices/${dev}/power/control"
+    [[ -w $ctrl ]] && echo on >"$ctrl" || true
+  done
+  ;;
+post)
+  systemctl start intel_lpmd.service >/dev/null 2>&1 || true
+  ;;
+esac

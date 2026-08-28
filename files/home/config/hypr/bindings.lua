@@ -22,7 +22,7 @@ o.bind("F9", "Toggle touchpad", "omarchy-toggle-touchpad", { locked = true })
 o.bind("F10", "Mute microphone", "omarchy-audio-input-mute", { locked = true })
 o.bind("F12", "Display", "omarchy-menu toggle hardware", { locked = true })
 
--- Lid close must not suspend: s2idle and S3 both hang on this board.
+-- Lock and restore the panel around lid events. logind then suspends.
 -- Default was omarchy-system-lid-close / omarchy-hyprland-monitor-clamshell.
 hl.unbind("switch:on:Lid Switch")
 hl.unbind("switch:off:Lid Switch")

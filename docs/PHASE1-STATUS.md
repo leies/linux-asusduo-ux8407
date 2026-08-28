@@ -20,7 +20,7 @@ Do not treat later experiments as Phase 1 unless this file is updated.
 
 ## Sleep / lid
 
-s2idle and S3 both hang after `PM: suspend entry`; lid/power cannot wake. System suspend is disabled. Lid close locks and dims `intel_backlight` (no DPMS-off).
+Lid sleep: `xe.enable_dc=0` + power wells held + lpmd stopped around s2idle. Stock s2idle and S3 hung; do not DPMS-off the OLED.
 
 ## Intentionally off
 
