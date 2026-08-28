@@ -102,12 +102,23 @@ handshake_and_fn_lock() {
 
 set_kbd_level() {
   local dev="$1" level="$2"
+  local persist=1 osd=1
+  shift 2
+  while (($#)); do
+    case "$1" in
+    --no-save) persist=0 ;;
+    --no-osd) osd=0 ;;
+    esac
+    shift
+  done
   ((level < 0)) && level=0
   ((level > MAX_KBD)) && level=$MAX_KBD
   hid_feature "$dev" 0x5a 0xba 0xc5 0xc4 "$level"
-  mkdir -p "$STATE_DIR"
-  echo "$level" >"$KBD_STATE"
-  if command -v omarchy-osd >/dev/null 2>&1; then
+  if ((persist)); then
+    mkdir -p "$STATE_DIR"
+    echo "$level" >"$KBD_STATE"
+  fi
+  if ((osd)) && command -v omarchy-osd >/dev/null 2>&1; then
     local pct=0
     ((MAX_KBD > 0)) && pct=$((level * 100 / MAX_KBD))
     omarchy-osd -i keyboard -p "$pct" || true
@@ -143,6 +154,15 @@ cmd_kbd() {
   restore)
     [[ -r $KBD_STATE ]] && level="$(<"$KBD_STATE")" || level=1
     ;;
+  sleep-off)
+    set_kbd_level "$dev" 0 --no-save --no-osd
+    return 0
+    ;;
+  sleep-on)
+    [[ -r $KBD_STATE ]] && level="$(<"$KBD_STATE")" || level=1
+    set_kbd_level "$dev" "$level" --no-osd
+    return 0
+    ;;
   up) level=$((level + 1)) ;;
   down) level=$((level - 1)) ;;
   cycle)
@@ -151,7 +171,7 @@ cmd_kbd() {
     ;;
   [0-3]) level="$action" ;;
   *)
-    echo "Usage: ${0##*/} kbd-backlight {up|down|cycle|off|restore|0-3}" >&2
+    echo "Usage: ${0##*/} kbd-backlight {up|down|cycle|off|restore|sleep-off|sleep-on|0-3}" >&2
     exit 1
     ;;
   esac
